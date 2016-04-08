@@ -95,7 +95,7 @@ function draw() {
   rectMode(CENTER);
   var numFloors = 3;
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
-    var floorStartX = 175 * floorNum;
+    var floorStartX = 30 + 175 * floorNum;
     var floorStartY = 50;
     for (var row = 0; row < floorSize; row++) {
       for (var col = 0; col < floorSize; col++) {
