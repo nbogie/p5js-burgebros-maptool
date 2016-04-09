@@ -12,6 +12,7 @@ var numTilesToShow = 6;
 var buttonPositions = [];
 var selectedButton;
 var tInfos;
+var tileButtons;
 
 var tileList = [
   ["Safe", 3, [82, 133, 74]],
@@ -62,10 +63,16 @@ function mousePressed() {
     };
     console.log("found: " + hitButtonMaybe.name + " ix: " + selectedButton.ix + " info: " + selectedButton.name);
   } else {
-    console.log("no button hit.");
+      var hitTileMaybe = findHitThing(tileButtons);
+      if (hitTileMaybe) {
+        console.log("found: " + hitTileMaybe.name);
+        if(selectedButton){
+          placeSelectedButton(hitTileMaybe);
+        }
+      } else {
+        console.log("nothing found on mouse press.");
+      }
   }
-  //TODO: reinstate when we have tilePositions.
-  //var hitTileMaybe = findHitThing(tilePositions);
 }
 
 function findHitThing(hittables) {
@@ -75,23 +82,18 @@ function findHitThing(hittables) {
   });
 }
 
-function keyTyped() {
-  if (key === "p") {
-    placeSelectedButton();
-  }
-}
-
 function unplaceSelectedTile() {
   //TODO: remove the selected tile instance from layout, if any
 
 }
 
-function placeSelectedButton() {
+function placeSelectedButton(destinationTileButton) {
   if (selectedButton) {
     var info = selectedButton.tileInfo;
     if (info.remainingNum > 0) {
       info.remainingNum--;
       console.log("placed a " + info.name);
+      destinationTileButton.name = "placed";
     } else {
       console.log("(none left)");
     }
@@ -149,7 +151,6 @@ function setup() {
   frameRate(10);
   tInfos = buildTileInfos();
   restart();
-  
 }
 
 function restart() {
@@ -167,12 +168,14 @@ function shouldShowThisTile(tileNum) {
 }
 
 function draw() {
-  drawPlaceTilesFromStacksGuide();
-
+  background(bgColor);
+  
+//  drawPlaceTilesFromStacksGuide();
   drawFloors();
   drawTileInfos(tInfos);
 
 }
+
 
 function drawFloor(floorNum, allFloorsStartX, allFloorsStartY){
 
@@ -182,7 +185,7 @@ function drawFloor(floorNum, allFloorsStartX, allFloorsStartY){
   var squareColor = color(200);
   var squareSpacingForWalls = 10;
   var normalSquareTextColor = color(0);
-  rectMode(CENTER);
+  rectMode(CORNER);
 
   var floorWidth = 230 * floorNum;
 
@@ -191,20 +194,35 @@ function drawFloor(floorNum, allFloorsStartX, allFloorsStartY){
 
       var x = floorWidth + allFloorsStartX + squareSize * col + col*squareSpacingForWalls;
       var y = allFloorsStartY + squareSize * row + row*squareSpacingForWalls;
-      var tileButton = {x1: x, y1:y, w: squareSize, h: squareSize, x2: x + squareSize, y2: y + squareSize};
 
+      var tileButton = {
+        dim: { 
+          x1: x, 
+          y1: y, 
+          x2: (x + squareSize), 
+          y2: (y + squareSize),
+          w: squareSize, 
+          h: squareSize
+        },
+        col: col,
+        row: row, 
+        floorNum: floorNum,
+        name: ""+[floorNum, col, row]
+      };      
+
+      tileButtons.push(tileButton);
       fill(squareColor);
-      rect(tileButton.x1, tileButton.y1, tileButton.w, tileButton.h, cornerRad);
+      rect(tileButton.dim.x1, tileButton.dim.y1, tileButton.dim.w, tileButton.dim.h, cornerRad);
       fill(normalSquareTextColor);
       noStroke();
-      text(col + ", " + row, x-10, y);
+      text(tileButton.name, x+squareSize*0.33, y+squareSize/2);
     }
   }
 }
 
 function drawFloors(){
-  background(bgColor);
   var numFloors = 3;
+  tileButtons = [];
 
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
     drawFloor(floorNum, 30, 50);
@@ -215,7 +233,6 @@ function drawPlaceTilesFromStacksGuide(){
   var cornerRad = 10;
   var squareSize = 40;
   var squareColor = color('gray');
-  //color(0, 100, 255);
   var hilitSquareColor =  color("#fcb543");
   var hilitSquareTextColor = color(255);
   var normalSquareTextColor = color(0);
@@ -342,6 +359,8 @@ function keyTyped() {
   } else if (key === ",") {
     showPrevTiles();
     draw();
+  } else if (key === "p") {
+    placeSelectedButton(null);
   } else if (key === "d") {
     toggleDebug();
   } else {
