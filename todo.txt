@@ -1,0 +1,4 @@
+TODO: 
+
+Add a scatter() function which distributes all the alarms on empty spaces somewhat evenly across all floors - it's quite time-consuming to add 15 or 18 alarm tiles and 4 cameras.
+
