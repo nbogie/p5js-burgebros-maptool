@@ -5,7 +5,7 @@ var layoutOrderItems;
 
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
 var mode = Mode.DESIGN;
-
+var squareSize = 40;
 var firstTileNumToShow = 1;
 var numTilesToShow = 6;
 
@@ -93,7 +93,7 @@ function placeSelectedButton(destinationTileButton) {
     if (info.remainingNum > 0) {
       info.remainingNum--;
       console.log("placed a " + info.name);
-      destinationTileButton.name = "placed";
+      destinationTileButton.name = info.name;
     } else {
       console.log("(none left)");
     }
@@ -150,6 +150,7 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   frameRate(10);
   tInfos = buildTileInfos();
+  layoutFloors(squareSize);
   restart();
 }
 
@@ -171,22 +172,30 @@ function draw() {
   background(bgColor);
   
 //  drawPlaceTilesFromStacksGuide();
-  drawFloors();
+  drawTiles(squareSize);
   drawTileInfos(tInfos);
-
 }
 
 
-function drawFloor(floorNum, allFloorsStartX, allFloorsStartY){
+function drawTiles(squareSize){
+  var normalSquareTextColor = color(0);
+  var squareColor = color(200);
+  var cornerRad = 10;
+
+  rectMode(CORNER);
+  for(var tb of tileButtons){
+      fill(squareColor);
+      rect(tb.dim.x1, tb.dim.y1, tb.dim.w, tb.dim.h, cornerRad);
+      fill(normalSquareTextColor);
+      noStroke();
+      text(tb.name, tb.dim.x1+squareSize*0.33, tb.dim.y1+squareSize/2);
+  }
+}
+
+function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, squareSize){
 
   var floorSize = 4;
-  var cornerRad = 10;
-  var squareSize = 40;
-  var squareColor = color(200);
   var squareSpacingForWalls = 10;
-  var normalSquareTextColor = color(0);
-  rectMode(CORNER);
-
   var floorWidth = 230 * floorNum;
 
   for (var row = 0; row < floorSize; row++) {
@@ -209,23 +218,17 @@ function drawFloor(floorNum, allFloorsStartX, allFloorsStartY){
         floorNum: floorNum,
         name: ""+[floorNum, col, row]
       };      
-
       tileButtons.push(tileButton);
-      fill(squareColor);
-      rect(tileButton.dim.x1, tileButton.dim.y1, tileButton.dim.w, tileButton.dim.h, cornerRad);
-      fill(normalSquareTextColor);
-      noStroke();
-      text(tileButton.name, x+squareSize*0.33, y+squareSize/2);
     }
   }
 }
 
-function drawFloors(){
+function layoutFloors(squareSize){
   var numFloors = 3;
   tileButtons = [];
 
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
-    drawFloor(floorNum, 30, 50);
+    layoutFloor(floorNum, 30, 50, squareSize);
   }
 }
 
@@ -260,7 +263,6 @@ function drawPlaceTilesFromStacksGuide(){
         var x = floorStartX + squareSize * row;
         var y = floorStartY + squareSize * col;
         var item = layoutOrderItems.find(makeFinderFor(col, row));
-        var d = {x: col, y: row, f: floorNum};
         var tileNum = layoutOrderItems.indexOf(item);
 
         if (tileNum < 0 ){
@@ -366,11 +368,4 @@ function keyTyped() {
   } else {
     //we don't respond to this key
   }
-}
-
-function newPos(x, y) {
-  return {
-    x: x,
-    y: y
-  };
 }
