@@ -103,7 +103,7 @@ function mousePressed() {
     console.log("no button hit.");
   }
   //TODO: reinstate when we have tilePositions.
-  var hitTileMaybe = findHitThing(tilePositions);
+  //var hitTileMaybe = findHitThing(tilePositions);
 }
 
 function findHitThing(hittables) {
