@@ -1,7 +1,6 @@
 "use strict";
 var bgColor = 0;
 var showDebug = false;
-var keepLooping = true;
 var layoutOrderItems;
 
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
@@ -47,10 +46,8 @@ function drawTileInfos(tInfos) {
       if (ix < tInfos.length) {
         var ti = tInfos[ix];
         fill(ti.c);
-        var numInCol = 5;
-        var numCols = 3;
         var x = 30 + col * 200;
-        var y = 225 + 20 * row;
+        var y = 255 + 20 * row;
         var w = 125;
         var h = 20;
         if ((selectedButton) && selectedButton.ix === ix) {
@@ -138,9 +135,9 @@ function placeSelectedButton() {
     var info = selectedButton.tileInfo;
     if (info.remainingNum > 0) {
       info.remainingNum--;
-      console.log("placed a " + info.name)
+      console.log("placed a " + info.name);
     } else {
-      console.log("(none left)")
+      console.log("(none left)");
     }
   } else {
     return;
@@ -176,7 +173,7 @@ var orderer = (function() {
       floor: parseInt(str.substring(0, 1)),
       row: 1 + parseInt(str.substring(1, 2).charCodeAt(0) - "a".charCodeAt(0)),
       col: parseInt(str.substring(2, 3))
-    }
+    };
   };
 
   return {
@@ -188,7 +185,7 @@ var orderer = (function() {
       }
       return items;
     }
-  }
+  };
 })();
 
 function setup() {
@@ -206,7 +203,6 @@ function restart() {
   console.log(layoutOrderItems);
 }
 
-var layoutOrderIx = 0;
 //a sample placement order - this'd be generated algorithmically from the desired layout and number of stacks.
 
 function shouldShowThisTile(tileNum) {
@@ -214,18 +210,53 @@ function shouldShowThisTile(tileNum) {
 
 }
 
-function toLetter(n) {
-  return String.fromCharCode(n + "a".charCodeAt(0));
-}
-
 function draw() {
   drawPlaceTilesFromStacksGuide();
+
+  drawFloors();
   drawTileInfos(tInfos);
 
 }
 
+function drawFloor(floorNum, allFloorsStartX, allFloorsStartY){
+
+  var floorSize = 4;
+  var cornerRad = 10;
+  var squareSize = 40;
+  var squareColor = color(200);
+  var squareSpacingForWalls = 10;
+  var normalSquareTextColor = color(0);
+  rectMode(CENTER);
+
+  var floorWidth = 230 * floorNum;
+
+  for (var row = 0; row < floorSize; row++) {
+    for (var col = 0; col < floorSize; col++) {
+
+      var x = floorWidth + allFloorsStartX + squareSize * col + col*squareSpacingForWalls;
+      var y = allFloorsStartY + squareSize * row + row*squareSpacingForWalls;
+      var tileButton = {x1: x, y1:y, w: squareSize, h: squareSize, x2: x + squareSize, y2: y + squareSize};
+
+      fill(squareColor);
+      rect(tileButton.x1, tileButton.y1, tileButton.w, tileButton.h, cornerRad);
+      fill(normalSquareTextColor);
+      noStroke();
+      text(col + ", " + row, x-10, y);
+    }
+  }
+}
+
+function drawFloors(){
+  background(bgColor);
+  var numFloors = 3;
+
+  for (var floorNum = 0; floorNum < numFloors; floorNum++) {
+    drawFloor(floorNum, 30, 50);
+  }
+}
+
 function drawPlaceTilesFromStacksGuide(){
-  var cornerV = 10;
+  var cornerRad = 10;
   var squareSize = 40;
   var squareColor = color('gray');
   //color(0, 100, 255);
@@ -236,20 +267,26 @@ function drawPlaceTilesFromStacksGuide(){
   var floorSize = 4;
   rectMode(CENTER);
   var numFloors = 3;
+
+  var makeFinderFor = function(col, row){
+    return function(item) {
+      return (item.col === col+1 &&
+              item.row === row+1 &&
+              item.floor === floorNum + 1
+             );
+      };
+    };
+
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
     var floorStartX = 30 + 175 * floorNum;
     var floorStartY = 50;
+    
     for (var row = 0; row < floorSize; row++) {
       for (var col = 0; col < floorSize; col++) {
 
         var x = floorStartX + squareSize * row;
         var y = floorStartY + squareSize * col;
-        var item = layoutOrderItems.find(function(item) {
-          return (item.col === col+1 &&
-                  item.row === row+1 &&
-                 item.floor === floorNum + 1
-                 );
-        });
+        var item = layoutOrderItems.find(makeFinderFor(col, row));
         var d = {x: col, y: row, f: floorNum};
         var tileNum = layoutOrderItems.indexOf(item);
 
@@ -260,13 +297,13 @@ function drawPlaceTilesFromStacksGuide(){
         
         if (shouldShowThisTile(tileNum)) {
           fill(hilitSquareColor);
-          rect(x, y, squareSize, squareSize, cornerV);
+          rect(x, y, squareSize, squareSize, cornerRad);
           fill(hilitSquareTextColor);
           noStroke();
           text(tileNum, x, y);
         } else {
           fill(squareColor);
-          rect(x, y, squareSize, squareSize, cornerV);
+          rect(x, y, squareSize, squareSize, cornerRad);
           fill(normalSquareTextColor);
           noStroke();
           text(tileNum, x, y);
@@ -276,25 +313,8 @@ function drawPlaceTilesFromStacksGuide(){
   }
 }
 
-var TType = {
-  PLACE: 1,
-  PLAYER: 2,
-  MONSTER: 3,
-  FOOD: 4,
-  ITEM: 5
-};
-
 function toggleDebug() {
   showDebug = !showDebug;
-}
-
-function togglePause() {
-  keepLooping = !keepLooping;
-  if (keepLooping) {
-    loop();
-  } else {
-    noLoop();
-  }
 }
 
 function showNextTiles() {
@@ -320,17 +340,11 @@ function keyTyped() {
   } else if (key === ",") {
     showPrevTiles();
     draw();
-  } else if (key === "p") {
-    togglePause();
   } else if (key === "d") {
     toggleDebug();
   } else {
     //we don't respond to this key
   }
-}
-
-function centre() {
-  return newPos(width / 2, height / 2);
 }
 
 function newPos(x, y) {
