@@ -22,7 +22,9 @@ var tileList = [
   ["Lavatory", 1, [167, 217, 246]],
   ["Service Duct", 2, [93, 84, 29]],
   ["Secret Door", 2, [93, 84, 29]],
-  ["Computer", 3, [162, 148, 172]],
+  ["CR(Laser)", 1, [162, 148, 172]],
+  ["CR(Fprint)", 1, [162, 148, 172]],
+  ["CR(Motion)", 1, [162, 148, 172]],
   ["Camera", 4, [152, 11, 31]],
   ["Laser", 3, [179, 13, 19]],
   ["Motion", 3, [179, 13, 19]],
@@ -94,6 +96,7 @@ function placeSelectedButton(destinationTileButton) {
       info.remainingNum--;
       console.log("placed a " + info.name);
       destinationTileButton.name = info.name;
+      destinationTileButton.c = info.c;
     } else {
       console.log("(none left)");
     }
@@ -179,16 +182,16 @@ function draw() {
 
 function drawTiles(squareSize){
   var normalSquareTextColor = color(0);
-  var squareColor = color(200);
   var cornerRad = 10;
 
   rectMode(CORNER);
   for(var tb of tileButtons){
-      fill(squareColor);
+      fill(tb.c);
       rect(tb.dim.x1, tb.dim.y1, tb.dim.w, tb.dim.h, cornerRad);
       fill(normalSquareTextColor);
       noStroke();
-      text(tb.name, tb.dim.x1+squareSize*0.33, tb.dim.y1+squareSize/2);
+      textSize(10);
+      text(tb.name, tb.dim.x1+2, tb.dim.y1+squareSize*0.55);
   }
 }
 
@@ -197,7 +200,8 @@ function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, squareSize){
   var floorSize = 4;
   var squareSpacingForWalls = 10;
   var floorWidth = 230 * floorNum;
-
+  var unassignedSquareColor = color(200);
+  
   for (var row = 0; row < floorSize; row++) {
     for (var col = 0; col < floorSize; col++) {
 
@@ -211,12 +215,13 @@ function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, squareSize){
           x2: (x + squareSize), 
           y2: (y + squareSize),
           w: squareSize, 
-          h: squareSize
+          h: squareSize,
         },
         col: col,
         row: row, 
         floorNum: floorNum,
-        name: ""+[floorNum, col, row]
+        c: unassignedSquareColor,
+        name: "unassigned"
       };      
       tileButtons.push(tileButton);
     }
