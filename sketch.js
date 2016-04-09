@@ -35,50 +35,6 @@ var tileList = [
 ];
 
 
-function drawTileInfos(tInfos) {
-  buttonPositions = [];
-  rectMode(CORNER);
-  var maxRows = 7;
-  var numCols = 3;
-  for (var col = 0; col < numCols; col++) {
-    for (var row = 0; row < maxRows; row++) {
-      var ix = (col * maxRows) + row;
-      if (ix < tInfos.length) {
-        var ti = tInfos[ix];
-        fill(ti.c);
-        var x = 30 + col * 200;
-        var y = 255 + 20 * row;
-        var w = 125;
-        var h = 20;
-        if ((selectedButton) && selectedButton.ix === ix) {
-          stroke(255);
-          strokeWeight(2);
-        } else {
-          stroke(0);
-          strokeWeight(1);
-
-        }
-        rect(x, y, w, h);
-        
-        buttonPositions.push({
-          dim: {
-            x1: x,
-            y1: y,
-            x2: x + w,
-            y2: y + h
-          },
-          name: ti.name
-        });
-
-        fill(0);
-        textSize(12);
-        noStroke();
-        text(ti.name + " - " + ti.remainingNum + "/" + ti.totalNum, x+10, y + 15);
-
-      }
-    }
-  }
-}
 
 function buildTileInfos() {
   var tInfos = tileList.map(function(tInfo) {
@@ -312,6 +268,52 @@ function drawPlaceTilesFromStacksGuide(){
     }
   }
 }
+
+function drawTileInfos(tInfos) {
+  buttonPositions = [];
+  rectMode(CORNER);
+  var maxRows = 7;
+  var numCols = 3;
+  for (var col = 0; col < numCols; col++) {
+    for (var row = 0; row < maxRows; row++) {
+      var ix = (col * maxRows) + row;
+      if (ix < tInfos.length) {
+        var ti = tInfos[ix];
+        fill(ti.c);
+        var x = 30 + col * 200;
+        var y = 255 + 20 * row;
+        var w = 125;
+        var h = 20;
+        if ((selectedButton) && selectedButton.ix === ix) {
+          stroke(255);
+          strokeWeight(2);
+        } else {
+          stroke(0);
+          strokeWeight(1);
+
+        }
+        rect(x, y, w, h);
+        
+        buttonPositions.push({
+          dim: {
+            x1: x,
+            y1: y,
+            x2: x + w,
+            y2: y + h
+          },
+          name: ti.name
+        });
+
+        fill(0);
+        textSize(12);
+        noStroke();
+        text(ti.name + " - " + ti.remainingNum + "/" + ti.totalNum, x+10, y + 15);
+
+      }
+    }
+  }
+}
+
 
 function toggleDebug() {
   showDebug = !showDebug;
