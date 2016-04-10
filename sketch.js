@@ -9,7 +9,7 @@ var squareSize = 40;
 var firstTileNumToShow = 1;
 var numTilesToShow = 6;
 
-var buttonPositions = [];
+var typeButtons = [];
 var selectedTypeButton;
 
 var tInfos;
@@ -58,10 +58,10 @@ function buildTileInfos() {
 function mousePressed() {
   console.log("searching for button containing hit: " + [mouseX, mouseY]);
 
-  var hitButtonMaybe = findHitThing(buttonPositions);
+  var hitButtonMaybe = findHitThing(typeButtons);
 
   if (hitButtonMaybe) {
-    var selectedTypeButtonIx = buttonPositions.indexOf(hitButtonMaybe);
+    var selectedTypeButtonIx = typeButtons.indexOf(hitButtonMaybe);
     selectedTypeButton = {
       ix: selectedTypeButtonIx,
       tileInfo: tInfos[selectedTypeButtonIx],
@@ -369,7 +369,7 @@ function drawPlaceTilesFromStacksGuide(){
 }
 
 function drawTileInfos(tInfos) {
-  buttonPositions = [];
+  typeButtons = [];
   rectMode(CORNER);
   var maxRows = 7;
   var numCols = 3;
@@ -393,7 +393,7 @@ function drawTileInfos(tInfos) {
         }
         rect(x, y, w, h);
         
-        buttonPositions.push({
+        typeButtons.push({
           dim: {
             x1: x,
             y1: y,
