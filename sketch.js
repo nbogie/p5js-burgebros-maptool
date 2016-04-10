@@ -339,6 +339,10 @@ function drawTileInfos(tInfos) {
 }
 
 
+function randomPlaceAllRemaining(){
+  console.log("randomly placing all remaining tiles");
+}
+
 function toggleDebug() {
   showDebug = !showDebug;
 }
@@ -362,12 +366,10 @@ function showPrevTiles() {
 function keyTyped() {
   if (key === ".") {
     showNextTiles();
-    draw();
   } else if (key === ",") {
     showPrevTiles();
-    draw();
-  } else if (key === "p") {
-    placeSelectedButton(null);
+  } else if (key === "r") {
+    randomPlaceAllRemaining();
   } else if (key === "d") {
     toggleDebug();
   } else {
