@@ -39,6 +39,8 @@
   "CORNER",
   "cos",
   "createCanvas",
+  "createButton",
+  "createInput",
   "dist",
   "ellipse",
   "endShape",
