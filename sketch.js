@@ -389,6 +389,7 @@ function drawHelp(){
     "", 
     "h: Toggle this help screen", 
     "r: Randomly fill the remaining spaces",
+    "c: Clear map",
     "Click: (on a tile space) Assign chosen type to space",
     "Shift-click: (on a tile space) Remove tile assignment of space",
     "Import: Load a map from a string in the input box",
@@ -645,6 +646,9 @@ function showPrevTiles() {
   }
 
 }
+function clearMap(){
+    restart();
+}
 
 function keyTyped() {
   if (key === ".") {
@@ -655,6 +659,8 @@ function keyTyped() {
     randomPlaceAllRemaining();
   } else if (key === "h") {
     toggleHelp();
+  } else if (key === "c") {
+    clearMap();
   } else if (key === "d") {
     toggleDebug();
   } else {
