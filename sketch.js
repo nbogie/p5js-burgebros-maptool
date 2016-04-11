@@ -6,6 +6,10 @@ var layoutOrderItems;
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
 var mode = Mode.DESIGN;
 var squareSize = 40;
+
+var floorSize;
+var numFloors;
+
 var firstTileNumToShow = 1;
 var numTilesToShow = 6;
 
@@ -17,30 +21,28 @@ var tInfos;
 
 var unassignedSquareColor;
 
-
 var tileList = [
-  ["Safe", 3, [82, 133, 74]],
-  ["Stairs", 3, [62, 73, 88]],
-  ["Walkway", 3, [167, 217, 246]],
-  ["Laboratory", 2, [167, 217, 246]],
-  ["Lavatory", 1, [167, 217, 246]],
-  ["Service Duct", 2, [93, 84, 29]],
-  ["Secret Door", 2, [93, 84, 29]],
-  ["CR(Laser)", 1, [162, 148, 172]],
-  ["CR(Fprint)", 1, [162, 148, 172]],
-  ["CR(Motion)", 1, [162, 148, 172]],
-  ["Camera", 4, [152, 11, 31]],
-  ["Laser", 3, [179, 13, 19]],
-  ["Motion", 3, [179, 13, 19]],
-  ["Detector", 3, [179, 13, 19]],
-  ["Fingerprint", 3, [179, 13, 19]],
-  ["Thermo", 3, [179, 13, 19]],
-  ["Keypad", 3, [191, 144, 40]],
-  ["Deadbolt", 3, [191, 144, 40]],
-  ["Foyer", 2, [206, 180, 31]],
-  ["Atrium", 2, [206, 180, 31]]
-];
-
+  ["Safe", 3, [82, 133, 74], "SA"],
+  ["Stairs", 3, [62, 73, 88], "ST"],
+  ["Walkway", 3, [167, 217, 246], "WA"],
+  ["Laboratory", 2, [167, 217, 246], "LB"],
+  ["Lavatory", 1, [167, 217, 246], "LV"],
+  ["Service Duct", 2, [93, 84, 29], "DU"],
+  ["Secret Door", 2, [93, 84, 29], "DO"],
+  ["CR(Laser)", 1, [162, 148, 172], "CL"],
+  ["CR(Fprint)", 1, [162, 148, 172], "CF"],
+  ["CR(Motion)", 1, [162, 148, 172], "CM"],
+  ["Camera", 4, [152, 11, 31], "CA"],
+  ["Laser", 3, [179, 13, 19], "LA"],
+  ["Motion", 3, [179, 13, 19], "MO"],
+  ["Detector", 3, [179, 13, 19], "DE"],
+  ["Fingerprint", 3, [179, 13, 19],"FI"],
+  ["Thermo", 3, [179, 13, 19], "TH"],
+  ["Keypad", 3, [191, 144, 40], "KE"],
+  ["Deadbolt", 3, [191, 144, 40], "DE"],
+  ["Foyer", 2, [206, 180, 31], "FO"],
+  ["Atrium", 2, [206, 180, 31], "AT"]
+]; //Code UA used for Unassigned
 
 
 function buildTileInfos() {
@@ -49,7 +51,8 @@ function buildTileInfos() {
       name: tInfo[0],
       totalNum: tInfo[1],
       remainingNum: tInfo[1],
-      c: color(tInfo[2])
+      c: color(tInfo[2]),
+      code: tInfo[3]
     };
   });
   return tInfos;
@@ -243,18 +246,112 @@ var orderer = (function() {
   };
 })();
 
+function findTileInfoForCode(code) {
+  return tInfos.find(function(ti){ return (ti.code === code); });
+}
+
+
+// ======== bbrosMap format ========
+//literal: bbrosMap
+//dd: version - two digits, zero padded
+//d: num floors
+//Then, for each floor as specified by num floors,
+//  d: width of floor
+//  d: height of floor
+//Then, reading floors from first to last, 
+//        reading rows from top to bottom
+//          reading columns from left to right
+//            [A-Z][A-Z]: Code for tile type at that position
+//TODO: add walls serialisation
+//TODO: give map format a more distinct name
+function loadMapFrom(str){
+  //e.g.
+  //bbrosMap0124444FOCFMOLBCLCACASAKEKEWADUTHSTDOLAFIMOLVSTLADELBCMKECALADOTHMODUSA
+  var first8 = str.substring(8, 0);
+  var version1 = parseInt(str.substring(8, 9));
+  var version2 = parseInt(str.substring(9, 10));
+  var version = [version1, version2];
+  var numFl = parseInt(str.substring(10, 11));
+  if (numFl < 1){
+    throw "Error: invalid number of floors in serialised map: "+numFl + ", in " + str;
+  }
+  var offset = 11;
+  var floorDims = [];
+  for(var f=0; f<numFl; f++){
+    var w = parseInt(str.substring(offset, offset+1));
+    var h = parseInt(str.substring(offset+1, offset+2));
+    floorDims.push([w,h]);
+    offset+=2;
+  }
+  var tileTypeCodes = [];
+  for(f=0; f < numFl; f++){
+    for (var c=0; c < floorDims[f][1]; c++){
+      for (var r=0; r < floorDims[f][0]; r++){
+        var code = str.substring(offset, offset+2);
+
+        tileTypeCodes.push(findTileInfoForCode(code));
+        
+        offset+=2;      
+      }
+    }
+  }
+
+  var meta = {
+    tag: first8, 
+    version: version, 
+    numFloors: numFl, 
+    floorDims: floorDims, 
+    tileTypeCodes: tileTypeCodes,
+    originalStr: str
+  };
+  console.log(meta);
+}
+
+function codeForTypeAtTile(tileButton){
+  return isOccupied(tileButton) ? tileButton.tInfo.code : "UA";
+}
+function serialiseMap(){
+  //JSON.stringify(tileButtons);
+  //encodeURIComponent("foo")
+  var floorWidth = floorSize;
+  var floorHeight = floorSize;
+
+  var dimStr = numFloors + (""+floorHeight + ""+floorWidth).repeat(numFloors);
+  var tilesStr = tileButtons.map(codeForTypeAtTile).join("");
+  var versionStr = "01";
+  return "bbrosMap" + versionStr + dimStr + tilesStr;
+}
+
 function setup() {
+
+  var mapTextInput = createInput('');  
+  
+  var importButton = createButton('Import map');
+  importButton.mousePressed(function(){
+    loadMapFrom(mapTextInput.value());
+    mapTextInput.hide();
+    importButton.hide();
+    exportButton.hide();
+  });
+
+  var exportButton = createButton('Export map');
+  exportButton.mousePressed(function(){
+    mapTextInput.value(serialiseMap());
+  });
+
   createCanvas(windowWidth, windowHeight);
   frameRate(10);
   unassignedSquareColor = color(200);
   tInfos = buildTileInfos();
-  layoutFloors(squareSize);
   restart();
 }
 
 function restart() {
+  numFloors = 3;
+  floorSize = 4;
   bgColor = color(30);
   background(bgColor);
+  layoutFloors(numFloors, floorSize, squareSize);
   layoutOrderItems = orderer.parseItemStrings(layoutOrder());
   console.log(layoutOrderItems);
 }
@@ -299,9 +396,8 @@ function drawTiles(squareSize){
   }
 }
 
-function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, squareSize){
+function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, floorSize, squareSize){
 
-  var floorSize = 4;
   var squareSpacingForWalls = 10;
   var floorWidth = 230 * floorNum;
   
@@ -330,12 +426,12 @@ function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, squareSize){
   }
 }
 
-function layoutFloors(squareSize){
-  var numFloors = 3;
+function layoutFloors(numFloors, floorSize, squareSize){
+
   tileButtons = [];
 
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
-    layoutFloor(floorNum, 30, 50, squareSize);
+    layoutFloor(floorNum, 30, 50, floorSize, squareSize);
   }
 }
 
