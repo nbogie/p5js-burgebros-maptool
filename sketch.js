@@ -26,8 +26,11 @@ var selectedTypeButton;
 var tInfos;
 
 var unassignedSquareColor;
-
-var sampleLevel = "bbrosMap013444444STTHDUMODECFCADOTHDBSAFICLLAFITHCAMOLADEATWAATDUSTLBFOSADBDEMOLAWAFOCMCALVKEWACAKEDBSALBSTKEDOFI011100000010001010101001000001110000111000010100010100000110010011001001";
+var sampleLevels = [
+  "bbrosMap013444444STTHDUMODECFCADOTHDBSAFICLLAFITHCAMOLADEATWAATDUSTLBFOSADBDEMOLAWAFOCMCALVKEWACAKEDBSALBSTKEDOFI-011100000010001010101001000001110000111000010100010100000110010011001001", 
+  "bbrosMap013444444LAFODEDEDUDEKEFISTDOCMFIATSALVCAFIKESTWALBDBDUATKEMOLASAWACFLAMOCADBTHCLSADBDOCAMOLBTHTHWACASTFO-101010101001010100001000000101000010100001010000100010011000110101000010"
+];
+var sampleLevel = sampleLevels[0];
 
 var tileList = [
   ["Safe", 3, [82, 133, 74], "SA"],
@@ -314,6 +317,14 @@ function loadMapFrom(str){
       }
     }
   }
+  var totalNumWallsExpected = floorDims.reduce(function(tot, d) {
+    return tot + numWallPositionsForFloor(d.w,d.h);
+  }, 0);
+
+  //skip forward past separator
+  var remainder = str.substring(offset+1, str.length);
+  var wallsCodes = remainder.substring(0, totalNumWallsExpected).split("");
+  //var wallsCodes = decodeWallsHexStringToTrimmedBinStringOfLen(remainder, totalNumWallsExpected).split("");
 
   var wallsForMap = [];
   for(f=0; f < numFl; f++){
@@ -321,9 +332,8 @@ function loadMapFrom(str){
     var h = floorDims[f].h;
 
     for(var wi=0; wi < numWallPositionsForFloor(w,h); wi++){
-        var code = str.substring(offset, offset+1);
+        var code = wallsCodes.shift();
         wallsForMap.push(code==='1');
-        offset ++;
     }
   }
 
@@ -344,6 +354,48 @@ function loadMapFrom(str){
 function codeForTypeAtTile(tileButton){
   return isOccupied(tileButton) ? tileButton.tInfo.code : "UA";
 }
+
+//credit: http://stackoverflow.com/users/1608816/tobspr
+function checkBin(n){return/^[01]{1,64}$/.test(n)};
+function checkHex(n){return/^[0-9A-Fa-f]{1,64}$/.test(n)};
+function pad(s,z){s=""+s;return s.length < z ? pad("0"+s,z) : s};
+function Bin2Hex(n){if(!checkBin(n))return 0;return parseInt(n,2).toString(16)};
+function Hex2Bin(n){if(!checkHex(n))return 0;return parseInt(n,16).toString(2)};
+
+function padLenToMultipleOf4(str){
+  if (str.length % 4 !== 0){
+    var targetLen = 4 * ( 1 + Math.floor(str.length/4));
+    str = pad(str, targetLen);
+  }
+  return str;
+}
+
+
+function encodeWallsBinStringToHexString(binStr){
+  if (binStr.length === 0){
+    return "";
+  }
+  var paddedBin = padLenToMultipleOf4(binStr);
+  var paddedHexExpectedLen = paddedBin.length / 4;
+
+  var hexStr = "";
+  while(paddedBin.length > 0){
+    var hexChunk = Bin2Hex(paddedBin.substring(0, 64));
+    hexStr += pad(hexChunk, paddedBin.length / 4);
+    paddedBin = paddedBin.slice(64);
+  }
+  return hexStr;
+}
+
+function decodeWallsHexStringToTrimmedBinStringOfLen(hexStr, expectedLen){
+  if (hexStr === ""){
+    return "";
+  }
+  var paddedBin = Hex2Bin(hexStr)
+  var paddingLen = paddedBin.length - expectedLen;
+  return paddedBin.slice(paddingLen);
+}
+
 function serialiseMap(){
   //JSON.stringify(tileButtons);
   //encodeURIComponent("foo")
@@ -356,9 +408,9 @@ function serialiseMap(){
   var dimStr = numFloors + (""+floorHeight + ""+floorWidth).repeat(numFloors);
   var tilesStr = tileButtons.map(codeForTypeAtTile).join("");
   var wallsStr = wallButtons.map(codeForWall).join("");
-  //TODO: compress wallsStr by conversion binary to hexadecimal
+  //wallsStr = encodeWallsBinStringToHexString(wallsStr);
   var versionStr = "01";
-  return "bbrosMap" + versionStr + dimStr + tilesStr + wallsStr;
+  return "bbrosMap" + versionStr + dimStr + tilesStr + "-" + wallsStr;
 }
 
 function setup() {
