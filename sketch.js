@@ -351,7 +351,6 @@ function restart() {
   background(bgColor);
   layoutFloors(numFloors, floorSize, squareSize);
   layoutOrderItems = orderer.parseItemStrings(layoutOrder());
-  console.log(layoutOrderItems);
 }
 
 //a sample placement order - this'd be generated algorithmically from the desired layout and number of stacks.
