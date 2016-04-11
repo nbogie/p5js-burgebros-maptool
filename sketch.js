@@ -393,8 +393,7 @@ function drawHelp(){
     "Click: (on a tile space) Assign chosen type to space",
     "Shift-click: (on a tile space) Remove tile assignment of space",
     "Import: Load a map from a string in the input box",
-    "Export: Save current map to string form, into box",
-    "Reload browser tab: Clear the map.  Sorry."
+    "Export: Save current map to string form, into box"
   ]
   
   fill(255);
