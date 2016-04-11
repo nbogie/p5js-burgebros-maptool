@@ -269,6 +269,8 @@ function findTileInfoForCode(code) {
 function loadMapFrom(str){
   //e.g.
   //bbrosMap0124444FOCFMOLBCLCACASAKEKEWADUTHSTDOLAFIMOLVSTLADELBCMKECALADOTHMODUSA
+  //...or a 3x3 with some unassigned tiles:
+  //bbrosMap013444444UAUACALVWADEFISALBSTLATHDELALADULBATSADOUAWATHWAUAUADUCAATCFSTCMDEMODEFICAFODEKEMODESTFICLSADOUA
   var first8 = str.substring(8, 0);
   var version1 = parseInt(str.substring(8, 9));
   var version2 = parseInt(str.substring(9, 10));
@@ -285,12 +287,12 @@ function loadMapFrom(str){
     floorDims.push([w,h]);
     offset+=2;
   }
-  var tileTypeCodes = [];
+  var tileInfosLoaded = [];
   for(f=0; f < numFl; f++){
     for (var c=0; c < floorDims[f][1]; c++){
       for (var r=0; r < floorDims[f][0]; r++){
         var code = str.substring(offset, offset+2);
-        tileTypeCodes.push(findTileInfoForCode(code));
+        tileInfosLoaded.push(findTileInfoForCode(code));
         offset+=2;      
       }
     }
@@ -301,7 +303,7 @@ function loadMapFrom(str){
     version: version, 
     numFloors: numFl, 
     floorDims: floorDims, 
-    tileTypeCodes: tileTypeCodes,
+    tileInfos: tileInfosLoaded,
     originalStr: str
   };
   console.log(meta);
