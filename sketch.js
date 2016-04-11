@@ -86,6 +86,14 @@ function countTilesOfNameInFloor(tileName, floorNum){
 }
 
 
+function findEssentialTypesRemaining(){
+  return tInfos.filter(function(tInfo) { 
+    return (tInfo.remainingNum > 0 && 
+      (tInfo.name === "Stairs" ||
+       tInfo.name === "Safe"));
+  });  
+}
+
 function findTypesRemaining(){
   return tInfos.filter(function(tInfo) { 
     return (tInfo.remainingNum > 0);
@@ -112,9 +120,6 @@ function pick(arr) {
 
 
 function isOkayToUseTypeOnFloor(typeBtn, floorNum){
-  //TODO: implement
-  console.log("check is ok to use " + [typeBtn.name, "in floor ", floorNum]);
-  
   if (typeBtn.name === "Safe"  && (countTilesOfNameInFloor("Safe", floorNum) > 0)){
     console.log("INVALID: floor has too many already of " + typeBtn.name);
     return false;
@@ -262,11 +267,14 @@ function shouldShowThisTile(tileNum) {
 }
 
 function draw() {
-  background(bgColor);
-  
-//  drawPlaceTilesFromStacksGuide();
+  background(bgColor);  
+  //  drawPlaceTilesFromStacksGuide();
   drawTiles(squareSize);
   drawTileInfos(tInfos);
+}
+
+function colorForType(tInfo){
+  return (tInfo.remainingNum < 1) ? color(100) : tInfo.c;
 }
 
 function colorForTile(tileBtn){
@@ -397,7 +405,7 @@ function drawTileInfos(tInfos) {
       var ix = (col * maxRows) + row;
       if (ix < tInfos.length) {
         var ti = tInfos[ix];
-        fill(ti.c);
+        fill(colorForType(ti));
         var x = 30 + col * 200;
         var y = 255 + 20 * row;
         var w = 125;
@@ -432,23 +440,36 @@ function drawTileInfos(tInfos) {
   }
 }
 
-function randomPlaceAllRemaining(){
-  console.log("randomly placing all remaining tiles");
-  var emptyTileButtons = findUnoccupiedTiles();
-  var typesRemaining = findTypesRemaining();
-  
-  while(emptyTileButtons.length > 0 && typesRemaining.length > 0){
-    var pickedSpot = pick(emptyTileButtons);
-    var pickedType = pick(typesRemaining);
-    console.log(typesRemaining.length);
-    //assert(null===      pickedSpot.tInfo);
-    //assert pickedType.remainingNum > 0
-    console.log(pickedType);
-    pickedSpot.tInfo = pickedType;
-    pickedType.remainingNum--;
-    emptyTileButtons = findUnoccupiedTiles();
-    typesRemaining = findTypesRemaining();
+function removeElementFromArray(elem, arr){
+  var index = arr.indexOf(elem);
+  if (index > -1) {
+    arr.splice(index, 1);
   }
+}
+
+function randomPlaceAllRemaining(){
+
+  function randomlyPlaceFromList(typeFinder){
+    var emptyTileButtons = findUnoccupiedTiles();
+    var typesRemaining = typeFinder();
+    
+    var attempts = 0;
+    while(emptyTileButtons.length > 0 && typesRemaining.length > 0 && attempts < 10000){
+      var pickedSpot = pick(emptyTileButtons);
+      var pickedType = pick(typesRemaining);
+      if (isOkayToUseTypeOnFloor(pickedType, pickedSpot.floorNum)){
+        pickedSpot.tInfo = pickedType;
+        pickedType.remainingNum--;
+      }
+      attempts++;
+      emptyTileButtons = findUnoccupiedTiles();
+      typesRemaining = typeFinder();
+    }
+  }
+
+  console.log("randomly placing all remaining tiles, essentials first...");
+  randomlyPlaceFromList(findEssentialTypesRemaining);
+  randomlyPlaceFromList(findTypesRemaining);
 
 }
 
