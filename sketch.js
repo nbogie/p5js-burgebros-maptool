@@ -264,6 +264,8 @@ function findTileInfoForCode(code) {
 //            [A-Z][A-Z]: Code for tile type at that position
 //TODO: add walls serialisation
 //TODO: give map format a more distinct name
+//TODO: Check and update tile-type remaining-counts once all imported.
+//      Reject if the map cannot be build with the standard tile set.
 function loadMapFrom(str){
   //e.g.
   //bbrosMap0124444FOCFMOLBCLCACASAKEKEWADUTHSTDOLAFIMOLVSTLADELBCMKECALADOTHMODUSA
