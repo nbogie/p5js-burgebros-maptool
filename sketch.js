@@ -290,9 +290,7 @@ function loadMapFrom(str){
     for (var c=0; c < floorDims[f][1]; c++){
       for (var r=0; r < floorDims[f][0]; r++){
         var code = str.substring(offset, offset+2);
-
         tileTypeCodes.push(findTileInfoForCode(code));
-        
         offset+=2;      
       }
     }
@@ -307,6 +305,7 @@ function loadMapFrom(str){
     originalStr: str
   };
   console.log(meta);
+  //TODO: take this to the layout fn and recreate the map.
 }
 
 function codeForTypeAtTile(tileButton){
@@ -331,9 +330,6 @@ function setup() {
   var importButton = createButton('Import map');
   importButton.mousePressed(function(){
     loadMapFrom(mapTextInput.value());
-    mapTextInput.hide();
-    importButton.hide();
-    exportButton.hide();
   });
 
   var exportButton = createButton('Export map');
