@@ -1,11 +1,14 @@
 "use strict";
 var bgColor = 0;
+var wallColor;
 var showDebug = false;
 var layoutOrderItems;
 
-var showHelp = true;
+var showHelp = false;
 
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
+var Dir = {NORTH: 'N', EAST: 'E', SOUTH: 'S', WEST: 'W'};
+
 var mode = Mode.DESIGN;
 var squareSizePx = 40;
 
@@ -16,12 +19,15 @@ var firstTileNumToShow = 1;
 var numTilesToShow = 6;
 
 var tileButtons;
+var wallButtons;
 var typeButtons;
 var selectedTypeButton;
 
 var tInfos;
 
 var unassignedSquareColor;
+
+var sampleLevel = "bbrosMap013444444LATHFIDOCADEFOMODUSASTDOCFWATHLALBDBATMOKESTLBWADBTHLVMOCLSACAFIDEDELAFIKECMFODBCAATDUWASAKESTCA000000000001000100000000100010000010010000000000000110010000101010000001010000000000000000100111000100101000000100000000";
 
 var tileList = [
   ["Safe", 3, [82, 133, 74], "SA"],
@@ -79,6 +85,11 @@ function mousePressed() {
 
         clickedTileButton(hitTileMaybe);
       } else {
+        var hitWallMaybe = findHitThing(wallButtons);
+        if (hitWallMaybe) {
+          clickedWallButton(hitWallMaybe);
+        } else {
+        }
       }
   }
 }
@@ -131,6 +142,11 @@ function isOkayToUseTypeOnFloor(typeBtn, floorNum){
     return false;
   }
   return true;
+}
+
+function clickedWallButton(wallBtn){
+  console.log("clicked wall button: " + wallBtn);
+  wallBtn.isOn = ! wallBtn.isOn;
 }
 
 function clickedTileButton(tileBtn){
@@ -258,15 +274,13 @@ function findTileInfoForCode(code) {
 //        reading rows from top to bottom
 //          reading columns from left to right
 //            [A-Z][A-Z]: Code for tile type at that position
-//TODO: add walls serialisation
+//Then, for every wall position, either a 1 or 0 to show that wall's state.
 //TODO: give map format a more distinct name
 //TODO: Check and update tile-type remaining-counts once all imported.
 //      Reject if the map cannot be build with the standard tile set.
 function loadMapFrom(str){
   //e.g.
-  //bbrosMap0124444FOCFMOLBCLCACASAKEKEWADUTHSTDOLAFIMOLVSTLADELBCMKECALADOTHMODUSA
-  //...or a 3x3 with some unassigned tiles:
-  //bbrosMap013444444UAUACALVWADEFISALBSTLATHDELALADULBATSADOUAWATHWAUAUADUCAATCFSTCMDEMODEFICAFODEKEMODESTFICLSADOUA
+  //bbrosMap013444444UALBDUSTWAMOCADUATCLWATHSADBCALVSADECFMOKELAKEDEMOCACAWAATSTLAFISTDBLBFODOFIKEDOFISADEFODBTHCMUA101000001000000000000010000000000000001111010111000001010010001000010010010010000000000010000001000000101000001000000011
   var first8 = str.substring(8, 0);
   var expectedTag = "bbrosMap";
   if(first8!==expectedTag){
@@ -300,17 +314,31 @@ function loadMapFrom(str){
     }
   }
 
+  var wallsForMap = [];
+  for(f=0; f < numFl; f++){
+    var w = floorDims[f].w;
+    var h = floorDims[f].h;
+
+    var numWallPositionsForFloor = 2*w*h + w + h;
+    for(var wi=0; wi < numWallPositionsForFloor; wi++){
+        var code = str.substring(offset, offset+1);
+        wallsForMap.push(code==='1');
+        offset ++;
+    }
+  }
+
   var meta = {
     tag: first8, 
     version: version, 
     numFloors: numFl, 
     floorDims: floorDims, 
     tileInfosForMap: tileInfosForMap,
+    wallsForMap: wallsForMap,
     originalStr: str
   };
   console.log(meta);
   
-  layoutFloors(numFl, floorDims, squareSizePx, tileInfosForMap);
+  layoutFloors(numFl, floorDims, squareSizePx, tileInfosForMap, wallsForMap);
 }
 
 function codeForTypeAtTile(tileButton){
@@ -319,18 +347,23 @@ function codeForTypeAtTile(tileButton){
 function serialiseMap(){
   //JSON.stringify(tileButtons);
   //encodeURIComponent("foo")
+  function codeForWall(wb){
+    return wb.isOn? '1' : '0';
+  }
   var floorWidth = floorSize;
   var floorHeight = floorSize;
 
   var dimStr = numFloors + (""+floorHeight + ""+floorWidth).repeat(numFloors);
   var tilesStr = tileButtons.map(codeForTypeAtTile).join("");
+  var wallsStr = wallButtons.map(codeForWall).join("");
+  //TODO: compress wallsStr by conversion binary to hexadecimal
   var versionStr = "01";
-  return "bbrosMap" + versionStr + dimStr + tilesStr;
+  return "bbrosMap" + versionStr + dimStr + tilesStr + wallsStr;
 }
 
 function setup() {
 
-  var mapTextInput = createInput('');  
+  var mapTextInput = createInput(sampleLevel);
   
   var importButton = createButton('Import map');
   importButton.mousePressed(function(){
@@ -353,6 +386,9 @@ function restart() {
   floorSize = 4;
   
   bgColor = color(30);
+  wallColor = color([211, 164, 60]);
+  //wallColor = color([221, 174, 70]);
+
   background(bgColor);
   
   tInfos = buildTileInfos();
@@ -374,6 +410,7 @@ function draw() {
   background(bgColor);  
   //  drawPlaceTilesFromStacksGuide();
   drawTiles(squareSizePx);
+  drawWalls();
   drawTileInfos(tInfos);
   if(showHelp){
     drawHelp();
@@ -437,11 +474,108 @@ function drawTiles(squareSizePx){
   }
 }
 
-function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY, floorDim, squareSizePx, tileInfosForFloor){
+function colorForWall(wb){
+  return color(wallColor);
+}
+
+function drawWalls(squareSizePx){
+  rectMode(CORNER);
+  for(var wb of wallButtons){
+      //stroke(255);
+      //strokeWeight(2);
+      if (wb.isOn){
+        fill(colorForWall(wb));
+        rect(wb.dim.x1, wb.dim.y1, wb.dim.w, wb.dim.h);
+      }
+  }
+}
+
+function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY, floorDim, squareSizePx, tileInfosForFloor, wallsForFloor){
   var squareSpacingForWalls = 10;
-  
+
+  function createWallButtonAt(col, row, dir, isOn){
+    var wallDimNarrowPx = 10;
+    var wallDimLongPx = squareSizePx;
+
+    //START MAIN CREATION OF WALL BUTTON
+    function isHoriz(){
+      return (dir === Dir.NORTH || dir === Dir.SOUTH);
+    };
+    function isVert(){
+      return !isHoriz();
+    };
+    
+    function squareXOffsetForWall(){
+      switch(dir){
+        case Dir.NORTH:
+        case Dir.SOUTH:
+        default: 
+          return 0;
+        break;
+        case Dir.EAST:
+          return squareSizePx;
+        case Dir.WEST:
+          return - wallDimNarrowPx;
+      }
+    }
+    function squareYOffsetForWall(){
+      switch(dir){
+        case Dir.EAST:
+        case Dir.WEST:
+        default: 
+          return 0;
+        break;
+        case Dir.SOUTH:
+          return squareSizePx;
+        case Dir.NORTH:
+          return - wallDimNarrowPx;
+      }
+    }
+
+    var wallWidthPx = isVert() ? wallDimNarrowPx : wallDimLongPx;//vertical
+    var wallHeightPx = isVert() ? wallDimLongPx : wallDimNarrowPx;//horizontal
+    
+    var x = allFloorsStartX + xOffsetForFloor + (col * (squareSizePx + wallDimNarrowPx)) + squareXOffsetForWall();
+    var y = allFloorsStartY + (row * (squareSizePx + wallDimNarrowPx)) + squareYOffsetForWall();
+    return {
+      dim: { 
+        x1: x, 
+        y1: y,
+        x2: (x + wallWidthPx), 
+        y2: (y + wallHeightPx),
+        w: wallWidthPx, 
+        h: wallHeightPx,
+      },
+      isOn: isOn,
+      col: col,
+      row: row, 
+      dir: dir,
+      floorNum: floorNum
+    };
+  }
+
+  function getNextWallStateOrOff(){
+    if (wallsForFloor && wallsForFloor.length > 0){
+      return wallsForFloor.shift();
+    }
+  }
+      
+  //Wall rules while rendering a tile:
+  //  Always render the walls to the West and North.
+  //  If this is the last in a row, also render the wall to the East.
+  //  If this is the last in a column, also render the wall to the South.
   for (var row = 0; row < floorDim.h; row++) {
     for (var col = 0; col < floorDim.w; col++) {
+  
+      wallButtons.push(createWallButtonAt(col, row, Dir.WEST, getNextWallStateOrOff()));
+      wallButtons.push(createWallButtonAt(col, row, Dir.NORTH, getNextWallStateOrOff()));
+
+      if (col === floorDim.w - 1){
+        wallButtons.push(createWallButtonAt(col, row, Dir.EAST, getNextWallStateOrOff()));
+      }
+      if (row === floorDim.h - 1){
+        wallButtons.push(createWallButtonAt(col, row, Dir.SOUTH, getNextWallStateOrOff()));
+      }
 
       var x = xOffsetForFloor + allFloorsStartX + squareSizePx * col + col*squareSpacingForWalls;
       var y = allFloorsStartY + squareSizePx * row + row*squareSpacingForWalls;
@@ -469,22 +603,27 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
       tileButtons.push(tileButton);
     }
   }
-  return 230 * (floorNum+1);
+  return 250 * (floorNum+1);
 }
 
-function layoutFloors(numFloors, floorDims, squareSizePx, tileInfosForMap){
+function layoutFloors(numFloors, floorDims, squareSizePx, tileInfosForMap, wallsForMap){
   tileButtons = [];
-  
+  wallButtons = [];
+
   //reset counts
   for(var ti of tInfos){
     ti.remainingNum = ti.totalNum;
   }
+
   var xOffsetForFloor = 0;
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
     var dim = floorDims[floorNum];
     var nTilesInFloor = dim.w * dim.h;
+    var nWallButtonsInFloor = (2 * dim.w * dim.h) + dim.w + dim.h;
+
     var tileInfosForFloor = tileInfosForMap ? tileInfosForMap.splice(0, nTilesInFloor) : undefined; 
-    xOffsetForFloor = layoutFloor(floorNum, xOffsetForFloor, 30, 50, dim, squareSizePx, tileInfosForFloor);
+    var wallsForFloor = wallsForMap ? wallsForMap.splice(0, nWallButtonsInFloor) : undefined; 
+    xOffsetForFloor = layoutFloor(floorNum, xOffsetForFloor, 30, 50, dim, squareSizePx, tileInfosForFloor, wallsForFloor);
   }
 }
 
