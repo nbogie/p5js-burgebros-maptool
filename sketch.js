@@ -7,7 +7,7 @@ var showHelp = true;
 
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
 var mode = Mode.DESIGN;
-var squareSize = 40;
+var squareSizePx = 40;
 
 var floorSize;
 var numFloors;
@@ -310,7 +310,7 @@ function loadMapFrom(str){
   };
   console.log(meta);
   
-  layoutFloors(numFl, floorDims, squareSize, tileInfosForMap);
+  layoutFloors(numFl, floorDims, squareSizePx, tileInfosForMap);
 }
 
 function codeForTypeAtTile(tileButton){
@@ -359,7 +359,7 @@ function restart() {
   layoutFloors(
     numFloors, 
     Array(numFloors).fill({w:floorSize, h:floorSize}), 
-    squareSize);
+    squareSizePx);
   layoutOrderItems = orderer.parseItemStrings(layoutOrder());
 }
 
@@ -373,7 +373,7 @@ function shouldShowThisTile(tileNum) {
 function draw() {
   background(bgColor);  
   //  drawPlaceTilesFromStacksGuide();
-  drawTiles(squareSize);
+  drawTiles(squareSizePx);
   drawTileInfos(tInfos);
   if(showHelp){
     drawHelp();
@@ -423,7 +423,7 @@ function labelForTile(tileBtn){
   return isOccupied(tileBtn) ? tileBtn.tInfo.name : " - ";
 }
 
-function drawTiles(squareSize){
+function drawTiles(squareSizePx){
   var normalSquareTextColor = color(0);
   var cornerRad = 10;
 
@@ -434,28 +434,28 @@ function drawTiles(squareSize){
       fill(normalSquareTextColor);
       noStroke();
       textSize(10);
-      text(labelForTile(tb), tb.dim.x1+2, tb.dim.y1+squareSize*0.55);
+      text(labelForTile(tb), tb.dim.x1+2, tb.dim.y1+squareSizePx*0.55);
   }
 }
 
-function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY, floorDim, squareSize, tileInfosForFloor){
+function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY, floorDim, squareSizePx, tileInfosForFloor){
   var squareSpacingForWalls = 10;
   
   for (var row = 0; row < floorDim.h; row++) {
     for (var col = 0; col < floorDim.w; col++) {
 
-      var x = xOffsetForFloor + allFloorsStartX + squareSize * col + col*squareSpacingForWalls;
-      var y = allFloorsStartY + squareSize * row + row*squareSpacingForWalls;
+      var x = xOffsetForFloor + allFloorsStartX + squareSizePx * col + col*squareSpacingForWalls;
+      var y = allFloorsStartY + squareSizePx * row + row*squareSpacingForWalls;
 
       //START MAIN CREATION OF TILE BUTTON
       var tileButton = {
         dim: { 
           x1: x, 
           y1: y, 
-          x2: (x + squareSize), 
-          y2: (y + squareSize),
-          w: squareSize, 
-          h: squareSize,
+          x2: (x + squareSizePx), 
+          y2: (y + squareSizePx),
+          w: squareSizePx, 
+          h: squareSizePx,
         },
         col: col,
         row: row, 
@@ -473,7 +473,7 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
   return 230 * (floorNum+1);
 }
 
-function layoutFloors(numFloors, floorDims, squareSize, tileInfosForMap){
+function layoutFloors(numFloors, floorDims, squareSizePx, tileInfosForMap){
   tileButtons = [];
   
   //reset counts
@@ -485,13 +485,12 @@ function layoutFloors(numFloors, floorDims, squareSize, tileInfosForMap){
     var dim = floorDims[floorNum];
     var nTilesInFloor = dim.w * dim.h;
     var tileInfosForFloor = tileInfosForMap ? tileInfosForMap.splice(0, nTilesInFloor) : undefined; 
-    xOffsetForFloor = layoutFloor(floorNum, xOffsetForFloor, 30, 50, dim, squareSize, tileInfosForFloor);
+    xOffsetForFloor = layoutFloor(floorNum, xOffsetForFloor, 30, 50, dim, squareSizePx, tileInfosForFloor);
   }
 }
 
 function drawPlaceTilesFromStacksGuide(){
   var cornerRad = 10;
-  var squareSize = 40;
   var squareColor = color('gray');
   var hilitSquareColor =  color("#fcb543");
   var hilitSquareTextColor = color(255);
@@ -517,8 +516,8 @@ function drawPlaceTilesFromStacksGuide(){
     for (var row = 0; row < floorSize; row++) {
       for (var col = 0; col < floorSize; col++) {
 
-        var x = floorStartX + squareSize * row;
-        var y = floorStartY + squareSize * col;
+        var x = floorStartX + squareSizePx * row;
+        var y = floorStartY + squareSizePx * col;
         var item = layoutOrderItems.find(makeFinderFor(col, row));
         var tileNum = layoutOrderItems.indexOf(item);
 
@@ -529,13 +528,13 @@ function drawPlaceTilesFromStacksGuide(){
         
         if (shouldShowThisTile(tileNum)) {
           fill(hilitSquareColor);
-          rect(x, y, squareSize, squareSize, cornerRad);
+          rect(x, y, squareSizePx, squareSizePx, cornerRad);
           fill(hilitSquareTextColor);
           noStroke();
           text(tileNum, x, y);
         } else {
           fill(squareColor);
-          rect(x, y, squareSize, squareSize, cornerRad);
+          rect(x, y, squareSizePx, squareSizePx, cornerRad);
           fill(normalSquareTextColor);
           noStroke();
           text(tileNum, x, y);
@@ -583,7 +582,7 @@ function drawTileInfos(tInfos) {
         fill(0);
         textSize(12);
         noStroke();
-        text(ti.name + " - " + ti.remainingNum + "/" + ti.totalNum, x+10, y + 15);
+        text(ti.name + "   " + ti.remainingNum + "/" + ti.totalNum, x+10, y + 15);
 
       }
     }
