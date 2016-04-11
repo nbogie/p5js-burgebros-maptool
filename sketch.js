@@ -39,14 +39,14 @@ var tileList = [
   ["Fingerprint", 3, [179, 13, 19],"FI"],
   ["Thermo", 3, [179, 13, 19], "TH"],
   ["Keypad", 3, [191, 144, 40], "KE"],
-  ["Deadbolt", 3, [191, 144, 40], "DE"],
+  ["Deadbolt", 3, [191, 144, 40], "DB"],
   ["Foyer", 2, [206, 180, 31], "FO"],
   ["Atrium", 2, [206, 180, 31], "AT"]
 ]; //Code UA used for Unassigned
 
 
 function buildTileInfos() {
-  var tInfos = tileList.map(function(tInfo) {
+  var list = tileList.map(function(tInfo) {
     return {
       name: tInfo[0],
       totalNum: tInfo[1],
@@ -55,12 +55,11 @@ function buildTileInfos() {
       code: tInfo[3]
     };
   });
-  return tInfos;
+  return list;
 }
 
 
 function mousePressed() {
-  console.log("searching for button containing hit: " + [mouseX, mouseY]);
 
   var hitButtonMaybe = findHitThing(typeButtons);
 
@@ -71,7 +70,6 @@ function mousePressed() {
       tileInfo: tInfos[selectedTypeButtonIx],
       name: tInfos[selectedTypeButtonIx].name
     };
-    console.log("found: " + hitButtonMaybe.name + " ix: " + selectedTypeButton.ix + " info: " + selectedTypeButton.name);
   } else {
 
       var hitTileMaybe = findHitThing(tileButtons);
@@ -79,7 +77,6 @@ function mousePressed() {
 
         clickedTileButton(hitTileMaybe);
       } else {
-        console.log("nothing found on mouse press.");
       }
   }
 }
@@ -135,7 +132,6 @@ function isOkayToUseTypeOnFloor(typeBtn, floorNum){
 }
 
 function clickedTileButton(tileBtn){
-  console.log("found: " + tileBtn.name);
   
   //shift-clicked?  remove if any occupant
   if (keyIsPressed && (keyCode === SHIFT)){
@@ -175,7 +171,6 @@ function isOccupied(tileBtn){
 }
 
 function vacateSelectedButton(tileBtn){
-  console.log("emptying tile " + JSON.stringify(tileBtn));
   tileBtn.tInfo.remainingNum++;
   tileBtn.tInfo = null;
   
@@ -187,7 +182,6 @@ function placeSelectedButtonUnconditionally(destinationTileButton) {
     var info = selectedTypeButton.tileInfo;
     if (info.remainingNum > 0) {
       info.remainingNum--;
-      console.log("placed a " + info.name);      
       destinationTileButton.tInfo = info;
       //that was the last one - deselect tiletype button
       if (info.remainingNum === 0){
@@ -284,15 +278,16 @@ function loadMapFrom(str){
   for(var f=0; f<numFl; f++){
     var w = parseInt(str.substring(offset, offset+1));
     var h = parseInt(str.substring(offset+1, offset+2));
-    floorDims.push([w,h]);
+    floorDims.push({w:w,h:h});
     offset+=2;
   }
-  var tileInfosLoaded = [];
+
+  var tileInfosForMap = [];
   for(f=0; f < numFl; f++){
-    for (var c=0; c < floorDims[f][1]; c++){
-      for (var r=0; r < floorDims[f][0]; r++){
+    for (var c=0; c < floorDims[f].w; c++){
+      for (var r=0; r < floorDims[f].h; r++){
         var code = str.substring(offset, offset+2);
-        tileInfosLoaded.push(findTileInfoForCode(code));
+        tileInfosForMap.push(findTileInfoForCode(code));
         offset+=2;      
       }
     }
@@ -303,11 +298,12 @@ function loadMapFrom(str){
     version: version, 
     numFloors: numFl, 
     floorDims: floorDims, 
-    tileInfos: tileInfosLoaded,
+    tileInfosForMap: tileInfosForMap,
     originalStr: str
   };
   console.log(meta);
-  //TODO: take this to the layout fn and recreate the map.
+  
+  layoutFloors(numFl, floorDims, squareSize, tileInfosForMap);
 }
 
 function codeForTypeAtTile(tileButton){
@@ -342,16 +338,21 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   frameRate(10);
   unassignedSquareColor = color(200);
-  tInfos = buildTileInfos();
   restart();
 }
 
 function restart() {
   numFloors = 3;
   floorSize = 4;
+  
   bgColor = color(30);
   background(bgColor);
-  layoutFloors(numFloors, floorSize, squareSize);
+  
+  tInfos = buildTileInfos();
+  layoutFloors(
+    numFloors, 
+    Array(numFloors).fill({w:floorSize, h:floorSize}), 
+    squareSize);
   layoutOrderItems = orderer.parseItemStrings(layoutOrder());
 }
 
@@ -395,13 +396,12 @@ function drawTiles(squareSize){
   }
 }
 
-function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, floorSize, squareSize){
-
+function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, floorDim, squareSize, tileInfosForFloor){
   var squareSpacingForWalls = 10;
   var floorWidth = 230 * floorNum;
   
-  for (var row = 0; row < floorSize; row++) {
-    for (var col = 0; col < floorSize; col++) {
+  for (var row = 0; row < floorDim.h; row++) {
+    for (var col = 0; col < floorDim.w; col++) {
 
       var x = floorWidth + allFloorsStartX + squareSize * col + col*squareSpacingForWalls;
       var y = allFloorsStartY + squareSize * row + row*squareSpacingForWalls;
@@ -418,19 +418,32 @@ function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, floorSize, squa
         },
         col: col,
         row: row, 
-        floorNum: floorNum
-      };      
+        floorNum: floorNum,
+      };
+      if (tileInfosForFloor && tileInfosForFloor.length > 0){
+        tileButton.tInfo = tileInfosForFloor.shift();
+        if(tileButton.tInfo){//not an unassigned (undefined) tile
+          tileButton.tInfo.remainingNum--;
+        }
+      }
       tileButtons.push(tileButton);
     }
   }
 }
 
-function layoutFloors(numFloors, floorSize, squareSize){
-
+function layoutFloors(numFloors, floorDims, squareSize, tileInfosForMap){
   tileButtons = [];
-
+  
+  //reset counts
+  for(var ti of tInfos){
+    ti.remainingNum = ti.totalNum;
+  }
+  
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
-    layoutFloor(floorNum, 30, 50, floorSize, squareSize);
+    var dim = floorDims[floorNum];
+    var nTilesInFloor = dim.w * dim.h;
+    var tileInfosForFloor = tileInfosForMap ? tileInfosForMap.splice(0, nTilesInFloor) : undefined; 
+    layoutFloor(floorNum, 30, 50, dim, squareSize, tileInfosForFloor);
   }
 }
 
