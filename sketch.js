@@ -406,7 +406,13 @@ function drawHelp(){
 }
 
 function colorForType(tInfo){
-  return (tInfo.remainingNum < 1) ? color(100) : tInfo.c;
+  if (tInfo.remainingNum === 0){
+    return color(100);
+  } else if (tInfo.remainingNum < 0){
+    return color('pink');
+  } else {
+    return tInfo.c;
+  }
 }
 
 function colorForTile(tileBtn){
