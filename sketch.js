@@ -438,14 +438,13 @@ function drawTiles(squareSize){
   }
 }
 
-function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, floorDim, squareSize, tileInfosForFloor){
+function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY, floorDim, squareSize, tileInfosForFloor){
   var squareSpacingForWalls = 10;
-  var floorWidth = 230 * floorNum;
   
   for (var row = 0; row < floorDim.h; row++) {
     for (var col = 0; col < floorDim.w; col++) {
 
-      var x = floorWidth + allFloorsStartX + squareSize * col + col*squareSpacingForWalls;
+      var x = xOffsetForFloor + allFloorsStartX + squareSize * col + col*squareSpacingForWalls;
       var y = allFloorsStartY + squareSize * row + row*squareSpacingForWalls;
 
       //START MAIN CREATION OF TILE BUTTON
@@ -471,6 +470,7 @@ function layoutFloor(floorNum, allFloorsStartX, allFloorsStartY, floorDim, squar
       tileButtons.push(tileButton);
     }
   }
+  return 230 * (floorNum+1);
 }
 
 function layoutFloors(numFloors, floorDims, squareSize, tileInfosForMap){
@@ -480,12 +480,12 @@ function layoutFloors(numFloors, floorDims, squareSize, tileInfosForMap){
   for(var ti of tInfos){
     ti.remainingNum = ti.totalNum;
   }
-  
+  var xOffsetForFloor = 0;
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
     var dim = floorDims[floorNum];
     var nTilesInFloor = dim.w * dim.h;
     var tileInfosForFloor = tileInfosForMap ? tileInfosForMap.splice(0, nTilesInFloor) : undefined; 
-    layoutFloor(floorNum, 30, 50, dim, squareSize, tileInfosForFloor);
+    xOffsetForFloor = layoutFloor(floorNum, xOffsetForFloor, 30, 50, dim, squareSize, tileInfosForFloor);
   }
 }
 
