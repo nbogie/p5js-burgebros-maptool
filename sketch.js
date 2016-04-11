@@ -27,7 +27,7 @@ var tInfos;
 
 var unassignedSquareColor;
 
-var sampleLevel = "bbrosMap013444444LATHFIDOCADEFOMODUSASTDOCFWATHLALBDBATMOKESTLBWADBTHLVMOCLSACAFIDEDELAFIKECMFODBCAATDUWASAKESTCA000000000001000100000000100010000010010000000000000110010000101010000001010000000000000000100111000100101000000100000000";
+var sampleLevel = "bbrosMap013444444STTHDUMODECFCADOTHDBSAFICLLAFITHCAMOLADEATWAATDUSTLBFOSADBDEMOLAWAFOCMCALVKEWACAKEDBSALBSTKEDOFI011100000010001010101001000001110000111000010100010100000110010011001001";
 
 var tileList = [
   ["Safe", 3, [82, 133, 74], "SA"],
@@ -37,9 +37,9 @@ var tileList = [
   ["Lavatory", 1, [167, 217, 246], "LV"],
   ["Service Duct", 2, [93, 84, 29], "DU"],
   ["Secret Door", 2, [93, 84, 29], "DO"],
-  ["CR(Laser)", 1, [162, 148, 172], "CL"],
-  ["CR(Fprint)", 1, [162, 148, 172], "CF"],
-  ["CR(Motion)", 1, [162, 148, 172], "CM"],
+  ["Comp. Laser", 1, [162, 148, 172], "CL"],
+  ["Comp. FPrint ", 1, [162, 148, 172], "CF"],
+  ["Comp. Motion ", 1, [162, 148, 172], "CM"],
   ["Camera", 4, [152, 11, 31], "CA"],
   ["Laser", 3, [179, 13, 19], "LA"],
   ["Motion", 3, [179, 13, 19], "MO"],
@@ -262,6 +262,7 @@ function findTileInfoForCode(code) {
   return tInfos.find(function(ti){ return (ti.code === code); });
 }
 
+function numWallPositionsForFloor(w, h){ return 2*w*h - w - h; };
 
 // ======== bbrosMap format ========
 //literal: bbrosMap
@@ -319,8 +320,7 @@ function loadMapFrom(str){
     var w = floorDims[f].w;
     var h = floorDims[f].h;
 
-    var numWallPositionsForFloor = 2*w*h + w + h;
-    for(var wi=0; wi < numWallPositionsForFloor; wi++){
+    for(var wi=0; wi < numWallPositionsForFloor(w,h); wi++){
         var code = str.substring(offset, offset+1);
         wallsForMap.push(code==='1');
         offset ++;
@@ -470,7 +470,11 @@ function drawTiles(squareSizePx){
       fill(normalSquareTextColor);
       noStroke();
       textSize(10);
-      text(labelForTile(tb), tb.dim.x1+2, tb.dim.y1+squareSizePx*0.55);
+      var lines = labelForTile(tb).split(" ");
+      for (var i in lines){
+        var line = lines[i];
+        text(line, tb.dim.x1+2, tb.dim.y1 + squareSizePx*0.55 +10*i);
+      }
   }
 }
 
@@ -492,7 +496,7 @@ function drawWalls(squareSizePx){
 
 function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY, floorDim, squareSizePx, tileInfosForFloor, wallsForFloor){
   var squareSpacingForWalls = 10;
-
+  console.log("laying out one floor with "+ wallsForFloor);
   function createWallButtonAt(col, row, dir, isOn){
     var wallDimNarrowPx = 10;
     var wallDimLongPx = squareSizePx;
@@ -567,14 +571,11 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
   for (var row = 0; row < floorDim.h; row++) {
     for (var col = 0; col < floorDim.w; col++) {
   
-      wallButtons.push(createWallButtonAt(col, row, Dir.WEST, getNextWallStateOrOff()));
-      wallButtons.push(createWallButtonAt(col, row, Dir.NORTH, getNextWallStateOrOff()));
-
-      if (col === floorDim.w - 1){
-        wallButtons.push(createWallButtonAt(col, row, Dir.EAST, getNextWallStateOrOff()));
+      if (col !== 0){
+        wallButtons.push(createWallButtonAt(col, row, Dir.WEST, getNextWallStateOrOff()));
       }
-      if (row === floorDim.h - 1){
-        wallButtons.push(createWallButtonAt(col, row, Dir.SOUTH, getNextWallStateOrOff()));
+      if (row !==0){
+        wallButtons.push(createWallButtonAt(col, row, Dir.NORTH, getNextWallStateOrOff()));
       }
 
       var x = xOffsetForFloor + allFloorsStartX + squareSizePx * col + col*squareSpacingForWalls;
@@ -603,7 +604,7 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
       tileButtons.push(tileButton);
     }
   }
-  return 250 * (floorNum+1);
+  return 230 * (floorNum+1);
 }
 
 function layoutFloors(numFloors, floorDims, squareSizePx, tileInfosForMap, wallsForMap){
@@ -619,10 +620,9 @@ function layoutFloors(numFloors, floorDims, squareSizePx, tileInfosForMap, walls
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
     var dim = floorDims[floorNum];
     var nTilesInFloor = dim.w * dim.h;
-    var nWallButtonsInFloor = (2 * dim.w * dim.h) + dim.w + dim.h;
 
     var tileInfosForFloor = tileInfosForMap ? tileInfosForMap.splice(0, nTilesInFloor) : undefined; 
-    var wallsForFloor = wallsForMap ? wallsForMap.splice(0, nWallButtonsInFloor) : undefined; 
+    var wallsForFloor = wallsForMap ? wallsForMap.splice(0, numWallPositionsForFloor(dim.w, dim.h)) : undefined; 
     xOffsetForFloor = layoutFloor(floorNum, xOffsetForFloor, 30, 50, dim, squareSizePx, tileInfosForFloor, wallsForFloor);
   }
 }
