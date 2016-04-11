@@ -1,11 +1,15 @@
 TODO: 
 
-Add a scatter() function which immediately distributes all the (remaining) alarms on empty spaces somewhat evenly across all floors - it's quite time-consuming to add 15 or 18 alarm tiles and 4 cameras.
+Have the full random distribution obey enabled rules.
 
-Add a full randomLayout() which immediately distributes all the remaining tiles on empty spaces, obeying enabled rules.
+Add a scatter() function which immediately distributes all the (remaining) alarms on empty spaces somewhat evenly across all floors - it's quite time-consuming to add 15 or 18 alarm tiles and 4 cameras.
 
 Allow rules to be disabled (e.g. allow more than one safe per floor).
 
 Allow custom distributions of tiles.
 
 UI: help the user identify which tile-types have not been exhausted.  It's difficult to see.  Perhaps gray out used tiles, or have any non-zero remain count be much more visible than zero remaining.
+
+DONE:
+
+Add a full randomLayout() which immediately distributes all the remaining tiles on empty spaces.
