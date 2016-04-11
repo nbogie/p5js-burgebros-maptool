@@ -3,6 +3,8 @@ var bgColor = 0;
 var showDebug = false;
 var layoutOrderItems;
 
+var showHelp = true;
+
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
 var mode = Mode.DESIGN;
 var squareSize = 40;
@@ -266,6 +268,11 @@ function loadMapFrom(str){
   //...or a 3x3 with some unassigned tiles:
   //bbrosMap013444444UAUACALVWADEFISALBSTLATHDELALADULBATSADOUAWATHWAUAUADUCAATCFSTCMDEMODEFICAFODEKEMODESTFICLSADOUA
   var first8 = str.substring(8, 0);
+  var expectedTag = "bbrosMap";
+  if(first8!==expectedTag){
+    console.log("Ignoring bad map load. Text is missing expected start of '"+expectedTag+"'");
+    return;
+  }
   var version1 = parseInt(str.substring(8, 9));
   var version2 = parseInt(str.substring(9, 10));
   var version = [version1, version2];
@@ -368,6 +375,34 @@ function draw() {
   //  drawPlaceTilesFromStacksGuide();
   drawTiles(squareSize);
   drawTileInfos(tInfos);
+  if(showHelp){
+    drawHelp();
+  }
+}
+
+function drawHelp(){
+  fill(50);
+  var m = 100;
+  rect(m,m,width-(m*2), height-(m*2));
+  var lines = [
+    "Burgle Bros map editor and (eventual) blind-layout guide", 
+    "", 
+    "h: Toggle this help screen", 
+    "r: Randomly fill the remaining spaces",
+    "Click: (on a tile space) Assign chosen type to space",
+    "Shift-click: (on a tile space) Remove tile assignment of space",
+    "Import: Load a map from a string in the input box",
+    "Export: Save current map to string form, into box",
+    "Reload browser tab: Clear the map.  Sorry."
+  ]
+  
+  fill(255);
+  textSize(18);
+  for (var i in lines){
+    var line = lines[i];
+    text(line, m*1.5, m*2 + i*30);
+  }
+
 }
 
 function colorForType(tInfo){
@@ -585,6 +620,10 @@ function toggleDebug() {
   showDebug = !showDebug;
 }
 
+function toggleHelp() {
+  showHelp = !showHelp;
+}
+
 function showNextTiles() {
   var orig = firstTileNumToShow;
   
@@ -608,6 +647,8 @@ function keyTyped() {
     showPrevTiles();
   } else if (key === "r") {
     randomPlaceAllRemaining();
+  } else if (key === "h") {
+    toggleHelp();
   } else if (key === "d") {
     toggleDebug();
   } else {
