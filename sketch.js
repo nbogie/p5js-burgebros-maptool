@@ -4,6 +4,10 @@ var wallColor;
 var showDebug = false;
 var layoutOrderItems;
 
+var gFloorDims;
+
+var floorsValid = [];
+
 var showHelp = false;
 
 var Mode = {DESIGN: 1, STACK: 2, FOLLOW: 3};
@@ -95,6 +99,7 @@ function mousePressed() {
         }
       }
   }
+  validateFloors();
 }
 function countTilesOfNameInFloor(tileName, floorNum){
   var res = findTilesOfNameInFloor(tileName, floorNum);
@@ -265,7 +270,14 @@ function findTileInfoForCode(code) {
   return tInfos.find(function(ti){ return (ti.code === code); });
 }
 
-function numWallPositionsForFloor(w, h){ return 2*w*h - w - h; };
+function numWallPositionsForFloor(w, h){ return 2*w*h - w - h; }
+
+
+function numWallPositionsForMap(floorDims) {
+  return floorDims.reduce(function(tot, d) {
+    return tot + numWallPositionsForFloor(d.w, d.h);
+  }, 0);
+}
 
 // ======== bbrosMap format ========
 //literal: bbrosMap
@@ -317,13 +329,10 @@ function loadMapFrom(str){
       }
     }
   }
-  var totalNumWallsExpected = floorDims.reduce(function(tot, d) {
-    return tot + numWallPositionsForFloor(d.w,d.h);
-  }, 0);
 
   //skip forward past separator
   var remainder = str.substring(offset+1, str.length);
-  var wallsCodes = remainder.substring(0, totalNumWallsExpected).split("");
+  var wallsCodes = remainder.substring(0, numWallPositionsForMap(floorDims)).split("");
   //var wallsCodes = decodeWallsHexStringToTrimmedBinStringOfLen(remainder, totalNumWallsExpected).split("");
 
   var wallsForMap = [];
@@ -332,8 +341,8 @@ function loadMapFrom(str){
     var h = floorDims[f].h;
 
     for(var wi=0; wi < numWallPositionsForFloor(w,h); wi++){
-        var code = wallsCodes.shift();
-        wallsForMap.push(code==='1');
+        var wallCode = wallsCodes.shift();
+        wallsForMap.push(wallCode==='1');
     }
   }
 
@@ -356,11 +365,11 @@ function codeForTypeAtTile(tileButton){
 }
 
 //credit: http://stackoverflow.com/users/1608816/tobspr
-function checkBin(n){return/^[01]{1,64}$/.test(n)};
-function checkHex(n){return/^[0-9A-Fa-f]{1,64}$/.test(n)};
-function pad(s,z){s=""+s;return s.length < z ? pad("0"+s,z) : s};
-function Bin2Hex(n){if(!checkBin(n))return 0;return parseInt(n,2).toString(16)};
-function Hex2Bin(n){if(!checkHex(n))return 0;return parseInt(n,16).toString(2)};
+function checkBin(n){return/^[01]{1,64}$/.test(n);}
+function checkHex(n){return/^[0-9A-Fa-f]{1,64}$/.test(n);}
+function pad(s,z){s=""+s;return s.length < z ? pad("0"+s,z) : s;}
+function Bin2Hex(n){if(!checkBin(n))return 0;return parseInt(n,2).toString(16);}
+function Hex2Bin(n){if(!checkHex(n))return 0;return parseInt(n,16).toString(2);}
 
 function padLenToMultipleOf4(str){
   if (str.length % 4 !== 0){
@@ -391,7 +400,7 @@ function decodeWallsHexStringToTrimmedBinStringOfLen(hexStr, expectedLen){
   if (hexStr === ""){
     return "";
   }
-  var paddedBin = Hex2Bin(hexStr)
+  var paddedBin = Hex2Bin(hexStr);
   var paddingLen = paddedBin.length - expectedLen;
   return paddedBin.slice(paddingLen);
 }
@@ -467,8 +476,15 @@ function draw() {
   if(showHelp){
     drawHelp();
   }
+  drawFloorsValid();
 }
 
+function drawFloorsValid(){
+  for (var i=0; i < floorsValid.length; i++){
+    fill(255);
+    text([i, floorsValid[i]], 40, 500+i*40);
+  }
+}
 function drawHelp(){
   fill(50);
   var m = 100;
@@ -483,7 +499,7 @@ function drawHelp(){
     "Shift-click: (on a tile space) Remove tile assignment of space",
     "Import: Load a map from a string in the input box",
     "Export: Save current map to string form, into box"
-  ]
+  ];
   
   fill(255);
   textSize(18);
@@ -556,10 +572,10 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
     //START MAIN CREATION OF WALL BUTTON
     function isHoriz(){
       return (dir === Dir.NORTH || dir === Dir.SOUTH);
-    };
+    }
     function isVert(){
       return !isHoriz();
-    };
+    }
     
     function squareXOffsetForWall(){
       switch(dir){
@@ -567,7 +583,7 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
         case Dir.SOUTH:
         default: 
           return 0;
-        break;
+          break;
         case Dir.EAST:
           return squareSizePx;
         case Dir.WEST:
@@ -662,7 +678,7 @@ function layoutFloor(floorNum, xOffsetForFloor, allFloorsStartX, allFloorsStartY
 function layoutFloors(numFloors, floorDims, squareSizePx, tileInfosForMap, wallsForMap){
   tileButtons = [];
   wallButtons = [];
-
+  gFloorDims = floorDims;
   //reset counts
   for(var ti of tInfos){
     ti.remainingNum = ti.totalNum;
@@ -785,6 +801,124 @@ function removeElementFromArray(elem, arr){
     arr.splice(index, 1);
   }
 }
+function isWallOn(wallBtn){
+  return wallBtn.isOn;
+}
+function isWallOff(wallBtn){
+  return !isWallOn(wallBtn);
+}
+
+function accessibleNodeInDir(dir, col, row, floorNum, floorDim){
+  var wb;
+  var neighbour = [col, row];
+  switch(dir) {
+    case Dir.NORTH: 
+      wb = wallButtonAt(floorNum, col, row, dir);  
+      neighbour[1] = neighbour[1]-1;
+      break;
+    case Dir.WEST:
+      wb = wallButtonAt(floorNum, col, row, dir);  
+      neighbour[0] = neighbour[0]-1;
+      break;
+    case Dir.EAST:
+      wb = wallButtonAt(floorNum, col+1, row, Dir.WEST);
+      neighbour[0] = neighbour[0]+1;
+      break;
+    case Dir.SOUTH:
+      neighbour[1] = neighbour[1]+1;
+      wb = wallButtonAt(floorNum, col, row+1, Dir.NORTH);
+      break;
+    default:
+      throw("invalid direction: "+dir);
+    }
+  if (wb && !wb.isOn) {
+    return neighbour;
+  } else {
+    return undefined;
+  }
+}
+
+function isEdgeTileAt(col, row, floorDim){
+  return (
+    col === 0 || 
+    row === 0 ||
+    col === (floorDim.w - 1) ||
+    row === (floorDim.h - 1)
+    );
+}
+
+function wallButtonAt(floorNum, col, row, dir){
+  return wallButtons.find(
+    function(wb){
+      return (
+        wb.col === col &&
+        wb.row === row &&
+        wb.floorNum === floorNum &&
+        wb.dir === dir
+        );
+    });
+}
+function mouseMoved(){
+  
+}
+
+function neighboursOf(n, floorNum, floorDim){
+  var ns = [];
+  var c = n[0];
+  var r = n[1];
+  var dirs = [Dir.NORTH, Dir.EAST, Dir.SOUTH, Dir.WEST];
+  for(var d of dirs){
+    var nb = accessibleNodeInDir(d, c, r, floorNum, floorDim);
+    if (nb){
+      ns.push(nb);
+    }
+  }
+  return ns;
+}
+
+function valid(floorNum, floorDim){
+  var numTilesInFloor = floorDim.w * floorDim.h;
+  var firstNode = [0,0];
+  
+  var nodesToCheck = [ firstNode ];
+  var visiteds = [];
+
+  while (nodesToCheck.length > 0){
+    var next = nodesToCheck.pop();
+    if (isCoordInList(next, visiteds)){
+      continue;
+    }
+    visiteds.push(next);
+    var neighbours = neighboursOf(next, floorNum, floorDim);
+    for (var nb of neighbours){
+      nodesToCheck.push(nb);
+    }
+  }
+  return (visiteds.length === numTilesInFloor);
+}
+
+function isCoordInList(p, list){
+  return list.find(function(item) { 
+                return item[0] === p[0] &&
+                       item[1] === p[1];
+               });
+}
+function placeWallsRandomly(n){
+  //Attempt to place n walls across the map.  
+  //Skip walls that make a level invalid.
+  for(var i=0; i < n; i++){
+    var emptyWalls = wallButtons.filter(isWallOff);
+    var pickedWall = pick(emptyWalls);
+    pickedWall.isOn = true;
+    var floorNum = pickedWall.floorNum;
+    var floorDim = {w: 4, h: 4}; //TODO: remove literal
+    if (valid(floorNum, floorDim)){
+      continue;
+    } else {
+      pickedWall.isOn = false;
+    }
+  }
+}
 
 function randomPlaceAllRemaining(){
 
@@ -809,9 +943,21 @@ function randomPlaceAllRemaining(){
   console.log("randomly placing all remaining tiles, essentials first...");
   randomlyPlaceFromList(findEssentialTypesRemaining);
   randomlyPlaceFromList(findTypesRemaining);
+  
+  placeWallsRandomly(floor(numWallPositionsForMap(gFloorDims) * 0.6));
 
+  validateFloors();
 }
 
+function numWallSpotsInMap(){
+}
+function validateFloors(){
+    floorsValid = [0,1,2].map(
+      function(n) { 
+        return valid(n, {w: 4, h: 4}); 
+      }
+    );
+}
 function toggleDebug() {
   showDebug = !showDebug;
 }
@@ -850,6 +996,8 @@ function keyTyped() {
     toggleHelp();
   } else if (key === "c") {
     clearMap();
+  } else if (key === "v") {
+    validateFloors();
   } else if (key === "d") {
     toggleDebug();
   } else {
