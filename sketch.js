@@ -422,8 +422,7 @@ function serialiseMap(){
   return "bbrosMap" + versionStr + dimStr + tilesStr + "-" + wallsStr;
 }
 
-function setup() {
-
+function setupHTMLElems(){
   var mapTextInput = createInput(sampleLevel);
   
   var importButton = createButton('Import map');
@@ -434,7 +433,11 @@ function setup() {
   var exportButton = createButton('Export map');
   exportButton.mousePressed(function(){
     mapTextInput.value(serialiseMap());
-  });
+  });  
+}
+
+function setup() {
+  setupHTMLElems();
 
   createCanvas(windowWidth, windowHeight);
   frameRate(10);
