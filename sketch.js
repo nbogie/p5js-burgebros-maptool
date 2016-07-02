@@ -437,7 +437,7 @@ function setupHTMLElems(){
 }
 
 function setup() {
-  setupHTMLElems();
+  //setupHTMLElems();
 
   createCanvas(windowWidth, windowHeight);
   frameRate(10);
@@ -472,7 +472,7 @@ function shouldShowThisTile(tileNum) {
 
 function draw() {
   background(bgColor);  
-  //  drawPlaceTilesFromStacksGuide();
+  drawPlaceTilesFromStacksGuide();
   drawTiles(squareSizePx);
   drawWalls();
   drawTileInfos(tInfos);
@@ -720,7 +720,7 @@ function drawPlaceTilesFromStacksGuide(){
 
   for (var floorNum = 0; floorNum < numFloors; floorNum++) {
     var floorStartX = 30 + 175 * floorNum;
-    var floorStartY = 50;
+    var floorStartY = 450;
     
     for (var row = 0; row < floorSize; row++) {
       for (var col = 0; col < floorSize; col++) {
