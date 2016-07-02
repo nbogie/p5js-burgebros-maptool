@@ -437,7 +437,7 @@ function setupHTMLElems(){
 }
 
 function setup() {
-  //setupHTMLElems();
+  setupHTMLElems();
 
   createCanvas(windowWidth, windowHeight);
   frameRate(10);
