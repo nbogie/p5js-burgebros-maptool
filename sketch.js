@@ -472,7 +472,7 @@ function shouldShowThisTile(tileNum) {
 
 function draw() {
   background(bgColor);  
-  drawPlaceTilesFromStacksGuide();
+  //drawPlaceTilesFromStacksGuide();
   drawTiles(squareSizePx);
   drawWalls();
   drawTileInfos(tInfos);
